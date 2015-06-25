@@ -30,7 +30,7 @@ class File extends Controller {
         *As long as admin login, connect app to server file, download files, convert,
         *and parse them into to database.
         */
-        //$this->all_connection();
+        $this->all_connection();
 
         /*
         *Query for intialize records in database.
