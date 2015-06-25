@@ -44,6 +44,11 @@ class File extends Controller {
         $data['sum_tc'] = $this->File_model->count_tc();
        
         /*
+        *Set recent date & time.
+        */
+        $data['datum'] = date("Y-m-d H:i:s");
+
+        /*
         *Call all views that will be show as index 
         */
         $this->load->view('header',array('data' => $data));

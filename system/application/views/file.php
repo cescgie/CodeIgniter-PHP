@@ -1,4 +1,4 @@
-
+  <p><span class="blink">Stand : <?= $data['datum'] ?></span></p>
   <?php 
   //CA Information
   if (!sizeof($data['sum_cf'])) {
