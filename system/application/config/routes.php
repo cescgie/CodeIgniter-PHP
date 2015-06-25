@@ -40,7 +40,7 @@
 |
 */
 
-$route['default_controller'] = "person";
+$route['default_controller'] = "file";
 $route['scaffolding_trigger'] = "";
 
 
