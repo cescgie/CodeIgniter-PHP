@@ -16,19 +16,93 @@ class File extends Controller {
     
     public function index()
     {
-        $data['title'] = "Title";
-        $data['sub_title'] ="Sub Title";
-        $this->all_connection();
+        /*
+        *This will be used as page title.
+        */
+        $data['title'] = 'Adserverdaten';
+
+        /*
+        *Start execute time
+        */
+        $time_start = microtime(true);
+
+        /*
+        *As long as admin login, connect app to server file, download files, convert,
+        *and parse them into to database.
+        */
+        //$this->all_connection();
+
+        /*
+        *Query for intialize records in database.
+        */
         $data['sum_cf'] = $this->File_model->count_cf();
+        $data['sum_ga'] = $this->File_model->count_ga();
+        $data['sum_gl'] = $this->File_model->count_gl();
+        $data['sum_ir'] = $this->File_model->count_ir();
+        $data['sum_kv'] = $this->File_model->count_kv();
+        $data['sum_kw'] = $this->File_model->count_kw();
+        $data['sum_tc'] = $this->File_model->count_tc();
+       
+        /*
+        *Call all views that will be show as index 
+        */
         $this->load->view('header',array('data' => $data));
         $this->load->view('file',array('data' => $data));
+
+        /*
+        *End execute time
+        */
+        $time_end = microtime(true);
+
+        /*
+        *Parameter $time has value executed time from parsing and query.
+        */
+        $time = $time_end - $time_start;
+
+        /*
+        *Set refresh-time As Session.
+        *This Session will be used in header.php
+        */   
+        if(!isset($_SESSION['refresh-time']) || $_SESSION['refresh-time'] == ''){
+          $_SESSION["refresh-time"] = "30";
+        }else{
+          if($time>60){
+            unset($_SESSION["refresh-time"]);
+            $_SESSION["refresh-time"] = "30";
+          }else{
+            unset($_SESSION["refresh-time"]);
+            $_SESSION["refresh-time"] = "600";
+          }
+        }
+        //echo 'SESSION_'.$_SESSION["refresh-time"]."s";
+        
     }
+
+    public function set_session($time){
+      /*
+      *if executed time longer than 60 seconds/ 1 minutes, 
+      *the next refresh-time will be 30 seconds,
+      *else will be set up as 600 seconds/ 10 minutes.
+      */
+      if($time>60){
+        $_SESSION["refresh-time"] = "30";
+      }else{
+        $_SESSION["refresh-time"] = "600";
+      }
+    }
+
 
     public function all_connection(){
       /*
       *Connect to each server file
       */
-      $this->connect('cf');
+      /*$this->connect('cf');
+      $this->connect('gl');
+      $this->connect('ir');
+      $this->connect('kv');
+      $this->connect('kw');*/
+      $this->connect('tc');
+      //$this->connect('ga');
     }
 
     public function get_web_page( $url )
@@ -114,10 +188,10 @@ class File extends Controller {
           $result = $this->get_web_page( $url );
 
           if ( $result['errno'] != 0 )
-              print_r("error: bad url | timeout | redirect loop ...");
+              Message::set("error: bad url | timeout | redirect loop ...");
 
           if ( $result['http_code'] != 200 )
-              print_r("error: no page | no permissions | no service ");
+              Message::set("error: no page | no permissions | no service ");
 
           $page = $result['content'];
 
@@ -136,10 +210,10 @@ class File extends Controller {
                   $result2 = $this->get_web_page( $newurl );
 
                   if ( $result2['errno'] != 0 )
-                      print_r("error: bad url | timeout | redirect loop ...");
+                      Message::set("error: bad url | timeout | redirect loop ...");
 
                   if ( $result2['http_code'] != 200 )
-                      print_r("error: no page | no permissions | no service ");
+                      Message::set("error: no page | no permissions | no service ");
 
                   $page2 = $result2['content'];
 
@@ -156,10 +230,10 @@ class File extends Controller {
                           $result3 = $this->get_web_page( $newurl2 );
 
                           if ( $result3['errno'] != 0 )
-                              print_r("error: bad url | timeout | redirect loop ...");
+                              Message::set("error: bad url | timeout | redirect loop ...");
 
                           if ( $result3['http_code'] != 200 )
-                              print_r("error: no page | no permissions | no service ");
+                              Message::set("error: no page | no permissions | no service ");
 
                           $page3 = $result3['content'];
                           if($result3==TRUE){
@@ -366,12 +440,10 @@ class File extends Controller {
                 $datas['VersionId'] = $tmpObject[0];
                 $datas['SequenceId'] = $tmpObject[1];
                 $datas['PlcNetworkId'] = $tmpObject[2];
-                $datas['PlcSubNetworkId'] = $tmpObject[3];
                 $datas['WebsiteId'] =$tmpObject[4];
                 $datas['PlacementId'] =$tmpObject[5];
                 $datas['PageId'] =$tmpObject[6];
                 $datas['CmgnNetworkId'] =$tmpObject[7];
-                $datas['CmgnSubNetworkId'] =$tmpObject[8];
                 $datas['CampaignId'] =$tmpObject[9];
                 $datas['MasterCampaignId'] =$tmpObject[10];
                 $datas['BannerId'] =$tmpObject[11];
@@ -385,7 +457,6 @@ class File extends Controller {
                 $datas['BrowserId'] =$tmpObject[19];
                 $datas['BrowserLanguage'] =$tmpObject[20];
                 $datas['TagType'] =$tmpObject[21];
-                $datas['IpRangeId'] =$tmpObject[22];
                 $datas['DateEntered'] =$tmpObject[23];
                 $datas['Hour'] =$tmpObject[24];
                 $datas['Minute'] =$tmpObject[25];
@@ -417,5 +488,916 @@ class File extends Controller {
           $debugTimeEnd = microtime(true); 
         } //end of while ($file = readdir ($handlefolder))
       }  //end of function
+
+  
+      public function parse_ga($dir2) {
+        ini_set('max_execution_time', 0); 
+        @set_time_limit(0);
+
+        $debugTimeStart = microtime(true); 
+
+        $dataTypesSize = array(
+                       'tinyint'=> array('code'=>'C', 'size'=>''),
+                       'smallint'=> array( 'code'=>'n', 'size'=>''),
+                       'int'=> array('code'=>'N', 'size'=>''),
+                       'unsignedint'=> array('code'=>'N', 'size'=>''),
+                       'char(16)'=> array('code'=>'a16', 'size'=>''),
+                       'char(32)'=> array('code'=>'a32', 'size'=>''),
+                       'char(50)'=> array('code'=>'a50', 'size'=>''),
+                       'char(150)'=> array('code'=>'a150', 'size'=>''),
+                       'char(200)'=> array('code'=>'a200', 'size'=>''),
+                       'char(1000)'=> array('code'=>'a1000', 'size'=>''),
+                       'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
+                 );
+        $codeGA = array(
+                array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
+                array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'PlcNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'PlcSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'WebsiteId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'PlacementId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'PageId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'CmgnNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'CmgnSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'CampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'MasterCampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'BannerId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'BannerNumber', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'PaymentId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'StateId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'AreaCodeId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'IpAddress', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'UserId', 'type'=>'char(16)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'OsId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'TagType', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'BrowserId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'BrowserLanguage', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'TLDId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'MediaTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'PlcContentTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'Reserved2', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'DateEntered', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'Hour', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'Minute', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'Second', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'AdServerIp', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'AdServerFarmId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'DMAId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'CountryId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'ZipCodeId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'CityId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'IspId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'CountTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                array('name'=>'ConnectionTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'')
+           );
+
+          $code = $codeGA;
+
+                //sizes of datatypes   
+          foreach($dataTypesSize AS $k=>$v) {
+                $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));                  
+          };
+          $rowPointer = 0;
+          foreach($code AS $k=>$v) {
+                $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
+                $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];   
+                $code[$k]['accumulatedPointer'] = $rowPointer;
+                $rowPointer += $code[$k]['size'];         
+          };     
+
+          //   size/length row            
+          $rowLength = count($code);
+          $rowSize = 0;
+          foreach($code AS $k=>$v) {
+               $rowSize += $code[$k]['size'];
+          };
+                      
+          // errorcode      
+          $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
+          $handlefolder = opendir (getcwd()."/".$dir2);
+          while ($file = readdir ($handlefolder)) {
+            if (substr($file, -4) == '.bin') {
+              $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
+              while ($contents = fread($handle, $rowSize)) {
+                  $tmpObject = array();
+                  for ($i=0; $i<$rowLength; $i++) {
+                             $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));         
+                             $data = $data[1];
+                             
+                             if ($code[$i]['name'] == 'IpAddress') {
+                                $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);          
+                             } elseif ($code[$i]['name'] == 'UserId') {
+                                $user = '';
+                                for ($ii=0; $ii<strlen($data); $ii++) {
+                                   $userTmp = ord($data[$ii]);
+                                   $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
+                                };
+                                $data = $user;    
+                                
+                             } elseif ($data < 0) {           // AND $code[$i]['type'] == 'unsignedint'
+                                if (!in_array($data, $errorcode))
+                                   $data = substr(bcsub($data*-1, 4294967296), 1);       
+                             };
+                             $tmpObject[$i] = $data;
+
+                    }; 
+                          $datas['VersionId'] = $tmpObject[0];
+                          $datas['SequenceId'] = $tmpObject[1];
+                          $datas['PlcNetworkId'] = $tmpObject[2];
+                          $datas['WebsiteId'] =$tmpObject[4];
+                          $datas['PlacementId'] =$tmpObject[5];
+                          $datas['CmgnNetworkId'] =$tmpObject[7];
+                          $datas['CampaignId'] =$tmpObject[9];
+                          $datas['MasterCampaignId'] =$tmpObject[10];
+                          $datas['BannerId'] =$tmpObject[11];
+                          $datas['BannerNumber'] =$tmpObject[12];
+                          $datas['PaymentId'] =$tmpObject[13];
+                          $datas['StateId'] =$tmpObject[14];
+                          $datas['AreaCodeId'] =$tmpObject[15];
+                          $datas['IpAddress'] =$tmpObject[16];
+                          $datas['UserId'] =$tmpObject[17];
+                          $datas['OsId'] =$tmpObject[18];
+                          $datas['TagType'] =$tmpObject[19];
+                          $datas['BrowserId'] =$tmpObject[20];
+                          $datas['BrowserLanguage'] =$tmpObject[21];
+                          $datas['TLDId'] =$tmpObject[22];
+                          $datas['MediaTypeId'] =$tmpObject[23];
+                          $datas['DateEntered'] =$tmpObject[26];
+                          $datas['Hour'] =$tmpObject[27];
+                          $datas['Minute'] =$tmpObject[28];
+                          $datas['Second'] =$tmpObject[29];
+                          $datas['AdServerIp'] =$tmpObject[30];
+                          $datas['AdServerFarmId'] =$tmpObject[31];
+                          $datas['DMAId'] =$tmpObject[32];
+                          $datas['CountryId'] =$tmpObject[33];
+                          $datas['ZipCodeId'] =$tmpObject[34];
+                          $datas['CityId'] =$tmpObject[35];
+                          $datas['IspId'] =$tmpObject[36];
+                          $datas['CountTypeId'] =$tmpObject[37];
+                          $datas['ConnectionTypeId'] =$tmpObject[38];
+                          $datas['in_bin'] = $file;
+                          $this->File_model->insert_ga($datas);
+              };//end of while ($contents = fread($handle, $rowSize)) 
+              //rename bin folder in path uploads/ 
+              @fclose($handle);
+              @chmod(getcwd()."/".$dir2.$file, 0666);
+              @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
+          };
+          $debugTimeEnd = microtime(true);
+        } 
+      } // end of function
+
+      public function parse_gl($dir2) {
+             ini_set('max_execution_time', 0); 
+             @set_time_limit(0);
+
+             $debugTimeStart = microtime(true); 
+
+             $dataTypesSize = array(
+                     'tinyint'=> array('code'=>'C', 'size'=>''),
+                     'smallint'=> array( 'code'=>'n', 'size'=>''),
+                     'int'=> array('code'=>'N', 'size'=>''),
+                     'unsignedint'=> array('code'=>'N', 'size'=>''),
+                     'char(16)'=> array('code'=>'a16', 'size'=>''),
+                     'char(32)'=> array('code'=>'a32', 'size'=>''),
+                     'char(50)'=> array('code'=>'a50', 'size'=>''),
+                     'char(150)'=> array('code'=>'a150', 'size'=>''),
+                     'char(200)'=> array('code'=>'a200', 'size'=>''),
+                     'char(1000)'=> array('code'=>'a1000', 'size'=>''),
+                     'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
+               );
+            $codeGA = array(
+              array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
+              array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlcNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlcSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'WebsiteId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlacementId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PageId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CmgnNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CmgnSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'MasterCampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BannerId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BannerNumber', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PaymentId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'StateId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AreaCodeId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'IpAddress', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'UserId', 'type'=>'char(16)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'OsId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'TagType', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BrowserId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BrowserLanguage', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'TLDId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'MediaTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlcContentTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Reserved2', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'DateEntered', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Hour', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Minute', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Second', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AdServerIp', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AdServerFarmId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'DMAId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CountryId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'ZipCodeId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CityId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'IspId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CountTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'ConnectionTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'')
+            );
+
+            $code = $codeGA;
+
+            //sizes of datatypes   
+            foreach($dataTypesSize AS $k=>$v) {
+                 $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], '')); 
+                 
+            };
+            $rowPointer = 0;
+            foreach($code AS $k=>$v) {
+                 $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
+                 $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];   
+                 $code[$k]['accumulatedPointer'] = $rowPointer;
+                 $rowPointer += $code[$k]['size'];         
+            };     
+
+            //   size/length row            
+            $rowLength = count($code);
+            $rowSize = 0;
+            foreach($code AS $k=>$v) {
+                 $rowSize += $code[$k]['size'];
+            };
+                    
+            // errorcode      
+            $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
+            $handlefolder = opendir (getcwd()."/".$dir2);
+            while ($file = readdir ($handlefolder)) {
+                if (substr($file, -4) == '.bin') {
+                  $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
+                  while ($contents = fread($handle, $rowSize)) {
+                      $tmpObject = array();
+                      for ($i=0; $i<$rowLength; $i++) {
+                           
+                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));         
+                           $data = $data[1];
+                           
+                           if ($code[$i]['name'] == 'IpAddress') {
+                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);          
+                           } elseif ($code[$i]['name'] == 'UserId') {
+                              $user = '';
+                              for ($ii=0; $ii<strlen($data); $ii++) {
+                                 $userTmp = ord($data[$ii]);
+                                 $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
+                              };
+                              $data = $user;    
+                              
+                           } elseif ($data < 0) {           // AND $code[$i]['type'] == 'unsignedint'
+                              if (!in_array($data, $errorcode))
+                                 $data = substr(bcsub($data*-1, 4294967296), 1);       
+                           };
+                           $tmpObject[$i] = $data;                         
+                        }; 
+                        $datas['VersionId'] = $tmpObject[0];
+                        $datas['SequenceId'] = $tmpObject[1];
+                        $datas['PlcNetworkId'] = $tmpObject[2];
+                        $datas['PlcSubNetworkId'] = $tmpObject[3];
+                        $datas['WebsiteId'] =$tmpObject[4];
+                        $datas['PlacementId'] =$tmpObject[5];
+                        $datas['PageId'] = $tmpObject[6];
+                        $datas['CmgnNetworkId'] =$tmpObject[7];
+                        $datas['CmgnSubNetworkId'] = $tmpObject[8];
+                        $datas['CampaignId'] =$tmpObject[9];
+                        $datas['MasterCampaignId'] =$tmpObject[10];
+                        $datas['BannerId'] =$tmpObject[11];
+                        $datas['BannerNumber'] =$tmpObject[12];
+                        $datas['PaymentId'] =$tmpObject[13];
+                        $datas['StateId'] =$tmpObject[14];
+                        $datas['AreaCodeId'] =$tmpObject[15];
+                        $datas['IpAddress'] =$tmpObject[16];
+                        $datas['UserId'] =$tmpObject[17];
+                        $datas['OsId'] =$tmpObject[18];
+                        $datas['TagType'] =$tmpObject[19];
+                        $datas['BrowserId'] =$tmpObject[20];
+                        $datas['BrowserLanguage'] =$tmpObject[21];
+                        $datas['TLDId'] =$tmpObject[22];
+                        $datas['MediaTypeId'] =$tmpObject[23];
+                        $datas['PlcContentTypeId'] = $tmpObject[24];
+                        $datas['Reserved2'] = $tmpObject[25];
+                        $datas['DateEntered'] =$tmpObject[26];
+                        $datas['Hour'] =$tmpObject[27];
+                        $datas['Minute'] =$tmpObject[28];
+                        $datas['Second'] =$tmpObject[29];
+                        $datas['AdServerIp'] =$tmpObject[30];
+                        $datas['AdServerFarmId'] =$tmpObject[31];
+                        $datas['DMAId'] =$tmpObject[32];
+                        $datas['CountryId'] =$tmpObject[33];
+                        $datas['ZipCodeId'] =$tmpObject[34];
+                        $datas['CityId'] =$tmpObject[35];
+                        $datas['IspId'] =$tmpObject[36];
+                        $datas['CountTypeId'] =$tmpObject[37];
+                        $datas['ConnectionTypeId'] =$tmpObject[38];
+                        $datas['in_bin'] = $file;
+                        $this->File_model->insert_gl($datas);
+                };
+                //rename bin folder in path uploads/ 
+                @fclose($handle);
+                @chmod(getcwd()."/".$dir2.$file, 0666);
+                @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
+            };
+            $debugTimeEnd = microtime(true);     
+        }
+    }// end of function
+
+    public function parse_ir($dir2) {
+             ini_set('max_execution_time', 0); 
+             @set_time_limit(0);
+
+             $debugTimeStart = microtime(true); 
+
+             $dataTypesSize = array(
+            'tinyint'=> array('code'=>'C', 'size'=>''),
+            'smallint'=> array( 'code'=>'n', 'size'=>''),
+            'int'=> array('code'=>'N', 'size'=>''),
+            'unsignedint'=> array('code'=>'N', 'size'=>''),
+            'char(16)'=> array('code'=>'a16', 'size'=>''),
+            'char(32)'=> array('code'=>'a32', 'size'=>''),
+            'char(40)'=> array('code'=>'a40', 'size'=>''),
+            'char(50)'=> array('code'=>'a50', 'size'=>''),
+            'char(150)'=> array('code'=>'a150', 'size'=>''),
+            'char(200)'=> array('code'=>'a200', 'size'=>''),
+            'char(1000)'=> array('code'=>'a1000', 'size'=>''),
+            'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
+        );
+    
+        $codeIR = array(
+              array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
+              array('name'=>'NetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'SubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlacementId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'IpAddress', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'UserId', 'type'=>'char(16)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'OsId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BrowserId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'TagType', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'RequestType', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'DateEntered', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Hour', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Minute', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Second', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AdServerIp', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AdServerFarmId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Url', 'type'=>'char(40)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Referer', 'type'=>'char(40)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'')
+            );
+        $code = $codeIR;
+        
+        /*
+          sizes of datatypes  
+        */  
+        foreach($dataTypesSize AS $k=>$v) {
+          $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));  
+          
+        };
+        $rowPointer = 0;
+        foreach($code AS $k=>$v) {
+          $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
+          $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];  
+          $code[$k]['accumulatedPointer'] = $rowPointer;
+          $rowPointer += $code[$k]['size'];     
+        };
+        /*
+          size/length row
+        */
+        $rowLength = count($code);
+        $rowSize = 0;
+        foreach($code AS $k=>$v) {
+          $rowSize += $code[$k]['size'];
+        };
+        /*
+          errorcode
+        */
+        $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
+        $handlefolder = opendir (getcwd()."/".$dir2);
+            while ($file = readdir ($handlefolder)) {
+                if (substr($file, -4) == '.bin') {
+                  $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
+                  while ($contents = fread($handle, $rowSize)) {
+                      $tmpObject = array();
+                      for ($i=0; $i<$rowLength; $i++) {
+                           
+                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));      
+                            $data = $data[1];
+                            
+                            if ($code[$i]['name'] == 'IpAddress') {
+                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);       
+                            } elseif ($code[$i]['name'] == 'UserId') {
+                              $user = '';
+                              for ($ii=0; $ii<strlen($data); $ii++) {
+                                $userTmp = ord($data[$ii]);
+                                $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
+                              };
+                              $data = $user;    
+                              
+                            } elseif ($data < 0) {        // AND $code[$i]['type'] == 'unsignedint'
+                              if (!in_array($data, $errorcode))
+                                $data = substr(bcsub($data*-1, 4294967296), 1);     
+                            };
+                            $tmpObject[$i] = $data;                       
+                        }; 
+                        $datas['VersionId'] = $tmpObject[0];
+                        $datas['NetworkId'] = $tmpObject[1];
+                        $datas['SubNetworkId'] = $tmpObject[2];
+                        $datas['PlacementId'] =$tmpObject[3];
+                        $datas['CampaignId'] =$tmpObject[4];
+                        $datas['IpAddress'] =$tmpObject[5];
+                        $datas['UserId'] =$tmpObject[6];
+                        $datas['OsId'] =$tmpObject[7];                        
+                        $datas['BrowserId'] =$tmpObject[8];
+                        $datas['TagType'] =$tmpObject[9];
+                        $datas['RequestType'] =$tmpObject[10];
+                        $datas['DateEntered'] =$tmpObject[11];
+                        $datas['Hour'] =$tmpObject[12];
+                        $datas['Minute'] =$tmpObject[13];
+                        $datas['Second'] =$tmpObject[14];
+                        $datas['AdServerIp'] =$tmpObject[15];
+                        $datas['AdServerFarmId'] =$tmpObject[16];
+                        $datas['Url'] =$tmpObject[17];
+                        $datas['Referer'] =$tmpObject[18];
+                        $datas['in_bin'] = $file;
+                        $this->File_model->insert_ir($datas);
+                     };
+                //rename bin folder in path uploads/ 
+                @fclose($handle);
+                @chmod(getcwd()."/".$dir2.$file, 0666);
+                @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
+               };
+              $debugTimeEnd = microtime(true); 
+        } 
+    } // end of function
+
+    public function parse_kv($dir2) {
+             ini_set('max_execution_time', 0); 
+             @set_time_limit(0);
+
+             $debugTimeStart = microtime(true); 
+
+             $dataTypesSize = array(
+            'tinyint'=> array('code'=>'C', 'size'=>''),
+            'smallint'=> array( 'code'=>'n', 'size'=>''),
+            'int'=> array('code'=>'N', 'size'=>''),
+            'unsignedint'=> array('code'=>'N', 'size'=>''),
+            'char(16)'=> array('code'=>'a16', 'size'=>''),
+            'char(32)'=> array('code'=>'a32', 'size'=>''),
+            'char(49)'=> array('code'=>'a49', 'size'=>''),
+            'char(50)'=> array('code'=>'a50', 'size'=>''),
+            'char(150)'=> array('code'=>'a150', 'size'=>''),
+            'char(200)'=> array('code'=>'a200', 'size'=>''),
+            'char(1000)'=> array('code'=>'a1000', 'size'=>''),
+            'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
+            );
+      
+            $codeKV2 = array(
+                  array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
+                  array('name'=>'RecordSize', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'PlcNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'PlcSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'WebsiteId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''), // 5
+                  array('name'=>'PlacementId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'CmgnNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'CmgnSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'CampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'ExtensionType', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''), //10
+                  array('name'=>'PhraseId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'NoKeywordEntries', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''), //12
+                  
+                );
+        
+            $codeKV2V2 = array(
+                  array('name'=>'KeyId1', 'type'=>'int', 'size'=>'', 'code'=>''),
+                  array('name'=>'ExpressionId1', 'type'=>'int', 'size'=>'', 'code'=>''),
+                  array('name'=>'ValueString1', 'type'=>'char(49)', 'size'=>'', 'code'=>'') 
+                );
+            
+
+            $code   = $codeKV2;
+            $codeV2 = $codeKV2V2;
+            
+            /*
+              sizes of datatypes  
+            */  
+            foreach($dataTypesSize AS $k=>$v) {
+              $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));  
+              
+            };
+            
+
+            $rowPointer = 0;
+            foreach($code AS $k=>$v) {
+              $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
+              $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];  
+              $code[$k]['accumulatedPointer'] = $rowPointer;
+              $rowPointer += $code[$k]['size'];
+            };
+            
+            foreach($codeV2 AS $k=>$v) {
+              $codeV2[$k]['size'] = $dataTypesSize[$codeV2[$k]['type']]['size'];
+              $codeV2[$k]['code'] = $dataTypesSize[$codeV2[$k]['type']]['code'];  
+            };
+            
+
+            /*
+              size/length row
+            */
+            $rowLength    = count($code);
+            $rowLengthV2  = count($codeKV2V2);
+            $rowSize = 0;
+            foreach($code AS $k=>$v) {    
+              $rowSize += $code[$k]['size'];  
+            };
+
+            $handlefolder = opendir (getcwd()."/".$dir2);
+            while ($file = readdir ($handlefolder)) {
+                if (substr($file, -4) == '.bin') {
+                  $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
+                  while ($contents = fread($handle, $rowSize)) {
+                      $tmpObject = array();
+                      for ($i=0; $i<$rowLength; $i++) {    
+                          $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));     
+                          $data = $data[1];
+                          
+                          if ($code[$i]['name'] == 'IpAddress') {
+                            $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);       
+                          } elseif ($code[$i]['name'] == 'UserId') {
+                            $user = '';
+                            for ($ii=0; $ii<strlen($data); $ii++) {
+                              $userTmp = ord($data[$ii]);
+                              $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
+                            };
+                            $data = $user;    
+                            
+                          } elseif ($data < 0) {        // AND $code[$i]['type'] == 'unsignedint'
+                            $data = substr(bcsub($data*-1, 4294967296), 1);     
+                          };
+                          if ($code[$i]['name'] == 'NoKeywordEntries') {
+                            $morekeyvalue = $data;
+                          };
+                          if ($code[$i]['name'] == 'RecordSize') {
+                            $recordsize = $data;
+                          };
+                          $tmpObject[$i] = $data; 
+                        };      
+                        if ($recordsize > $rowSize) {     
+                          $record = $recordsize-$rowSize;     
+                          $tmpObject[16] = array();
+                          $tmpObject[17] = array();
+                          $tmpObject[18] = array();   
+                          $recordPointer = 0;
+                          $contents = fread($handle, $record);        
+                          for ($i=0; $i<$morekeyvalue; $i++) {
+                            for ($iV2=0; $iV2<$rowLengthV2; $iV2++) {         
+                              $codeCode = $codeV2[$iV2]['code'];
+                              $codeSize = $codeV2[$iV2]['size']; 
+                              if ($iV2 == 2) {                      
+                                if ($codeSize>$record-$recordPointer) {
+                                  $codeCode = 'a'.($record-$recordPointer);
+                                  $codeSize = $record-$recordPointer;
+                                };            
+                              };          
+                              $data = unpack($codeCode, substr($contents, $recordPointer, $codeSize));  
+                              $recordPointer += $codeSize;
+                              $data = $data[1];         
+                              if ($codeV2[$iV2]['name'] == 'KeyId1') {
+                                array_push($tmpObject[16], $data);
+                              } elseif ($codeV2[$iV2]['name'] == 'ExpressionId1') {
+                                array_push($tmpObject[17], $data);
+                              } elseif ($codeV2[$iV2]['name'] == 'ValueString1') {
+                                array_push($tmpObject[18], $data);
+                              };
+                            };
+                          };
+                        };    
+                        $datas['VersionId'] = $tmpObject[0];
+                        $datas['RecordSize'] = $tmpObject[1];
+                        $datas['SequenceId'] = $tmpObject[2];
+                        $datas['PlcNetworkId'] = $tmpObject[3];
+                        $datas['PlcSubNetworkId'] = $tmpObject[4];
+                        $datas['WebsiteId'] =$tmpObject[5];
+                        $datas['PlacementId'] =$tmpObject[6];
+                        $datas['CmgnNetworkId'] =$tmpObject[7];
+                        $datas['CmgnSubNetworkId'] =$tmpObject[8];
+                        $datas['CampaignId'] =$tmpObject[9];
+                        $datas['ExtensionType'] =$tmpObject[10];
+                        $datas['PhraseId'] =$tmpObject[11];
+                        $datas['NoKeywordEntries'] =$tmpObject[12];                      
+                        $datas['in_bin'] = $file;
+                        $this->File_model->insert_kv($datas);
+                     };
+                //rename bin folder in path uploads/ 
+                @fclose($handle);
+                @chmod(getcwd()."/".$dir2.$file, 0666);
+                @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
+            };
+            $debugTimeEnd = microtime(true); 
+        }  
+    } // end of function
+
+    public function parse_kw($dir2) {
+             ini_set('max_execution_time', 0); 
+             @set_time_limit(0);
+
+             $debugTimeStart = microtime(true); 
+
+             $dataTypesSize = array(
+            'tinyint'=> array('code'=>'C', 'size'=>''),
+            'smallint'=> array( 'code'=>'n', 'size'=>''),
+            'int'=> array('code'=>'N', 'size'=>''),
+            'unsignedint'=> array('code'=>'N', 'size'=>''),
+            'char(16)'=> array('code'=>'a16', 'size'=>''),
+            'char(32)'=> array('code'=>'a32', 'size'=>''),
+            'char(40)'=> array('code'=>'a40', 'size'=>''),
+            'char(50)'=> array('code'=>'a50', 'size'=>''),
+            'char(150)'=> array('code'=>'a150', 'size'=>''),
+            'char(200)'=> array('code'=>'a200', 'size'=>''),
+            'char(1000)'=> array('code'=>'a1000', 'size'=>''),
+            'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
+                  );
+              
+            $codeKW = array(
+                  array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
+                  array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'PlcNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'PlcSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'WebsiteId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'PlacementId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'PageId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'CmgnNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'CmgnSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'CampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'MasterCampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'ExtensionType', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'TimeStamp', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId1', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId2', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId3', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId4', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId5', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId6', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId7', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId8', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId9', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordId10', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordText', 'type'=>'char(40)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  array('name'=>'KeywordTextLength', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+                  
+                );
+
+            $code = $codeKW;
+            
+            /*
+              sizes of datatypes  
+            */  
+            foreach($dataTypesSize AS $k=>$v) {
+              $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));  
+              
+            };
+            $rowPointer = 0;
+            foreach($code AS $k=>$v) {
+              $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
+              $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];  
+              $code[$k]['accumulatedPointer'] = $rowPointer;
+              $rowPointer += $code[$k]['size'];     
+            };
+            
+
+            /*
+              size/length row
+            */
+            $rowLength = count($code);
+            $rowSize = 0;
+            foreach($code AS $k=>$v) {
+              $rowSize += $code[$k]['size'];
+            };
+            
+            
+            /*
+              errorcode
+            */
+            $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
+
+            $handlefolder = opendir (getcwd()."/".$dir2);
+            while ($file = readdir ($handlefolder)) {
+                if (substr($file, -4) == '.bin') {
+                  $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
+                  while ($contents = fread($handle, $rowSize)) {
+                      $tmpObject = array();
+                      for ($i=0; $i<$rowLength; $i++) {    
+                          $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));     
+                          $data = $data[1];
+                          
+                          if ($code[$i]['name'] == 'IpAddress') {
+                            $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);       
+                          } elseif ($code[$i]['name'] == 'UserId') {
+                            $user = '';
+                            for ($ii=0; $ii<strlen($data); $ii++) {
+                              $userTmp = ord($data[$ii]);
+                              $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
+                            };
+                            $data = $user;    
+                            
+                          } elseif ($data < 0) {        // AND $code[$i]['type'] == 'unsignedint'
+                            if (!in_array($data, $errorcode))
+                              $data = substr(bcsub($data*-1, 4294967296), 1);     
+                          };
+                          $tmpObject[$i] = $data;     
+                          
+                        };  
+                        $datas['VersionId'] = $tmpObject[0];
+                        $datas['SequenceId'] = $tmpObject[1];
+                        $datas['PlcNetworkId'] = $tmpObject[2];
+                        $datas['PlcSubNetworkId'] = $tmpObject[3];
+                        $datas['WebsiteId'] =$tmpObject[4];
+                        $datas['PlacementId'] =$tmpObject[5];
+                        $datas['PageId'] = $tmpObject[6];
+                        $datas['CmgnNetworkId'] =$tmpObject[7];
+                        $datas['CmgnSubNetworkId'] =$tmpObject[8];
+                        $datas['CampaignId'] =$tmpObject[9];
+                        $datas['MasterCampaignId'] =$tmpObject[10];
+                        $datas['ExtensionType'] =$tmpObject[11];
+                        $datas['TimeStamp'] =$tmpObject[12];
+                        $datas['KeywordText'] =$tmpObject[13];
+                        $datas['KeywordTextLength'] =$tmpObject[14];  
+                        $datas['in_bin'] = $file;                    
+                        $this->File_model->insert_kw($datas);
+                     }; 
+                //rename bin folder in path uploads/ 
+                @fclose($handle);
+                @chmod(getcwd()."/".$dir2.$file, 0666);
+                @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
+            };
+            $debugTimeEnd = microtime(true); 
+        } 
+    } // end of function
+
+    public function parse_tc($dir2) {
+             ini_set('max_execution_time', 0); 
+             @set_time_limit(0);
+
+             $debugTimeStart = microtime(true); 
+
+             $dataTypesSize = array(
+                     'tinyint'=> array('code'=>'C', 'size'=>''),
+                     'smallint'=> array( 'code'=>'n', 'size'=>''),
+                     'int'=> array('code'=>'N', 'size'=>''),
+                     'unsignedint'=> array('code'=>'N', 'size'=>''),
+                     'char(16)'=> array('code'=>'a16', 'size'=>''),
+                     'char(32)'=> array('code'=>'a32', 'size'=>''),
+                     'char(50)'=> array('code'=>'a50', 'size'=>''),
+                     'char(150)'=> array('code'=>'a150', 'size'=>''),
+                     'char(200)'=> array('code'=>'a200', 'size'=>''),
+                     'char(1000)'=> array('code'=>'a1000', 'size'=>''),
+                     'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
+               );
+               $codeGA = array(
+              array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
+              array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlcNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlcSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'WebsiteId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlacementId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PageId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CmgnNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CmgnSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'MasterCampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BannerId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BannerNumber', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PaymentId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'StateId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AreaCodeId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'IpAddress', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'UserId', 'type'=>'char(16)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'OsId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'TagType', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BrowserId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'BrowserLanguage', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'TLDId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'MediaTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'PlcContentTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Reserved2', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'DateEntered', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Hour', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Minute', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'Second', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AdServerIp', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'AdServerFarmId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'DMAId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CountryId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'ZipCodeId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CityId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'IspId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'CountTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
+              array('name'=>'ConnectionTypeId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'')
+                    );
+
+               $code = $codeGA;
+
+              //sizes of datatypes   
+              foreach($dataTypesSize AS $k=>$v) {
+                 $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], '')); 
+                 
+              };
+              $rowPointer = 0;
+              foreach($code AS $k=>$v) {
+                 $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
+                 $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];   
+                 $code[$k]['accumulatedPointer'] = $rowPointer;
+                 $rowPointer += $code[$k]['size'];         
+              };     
+
+               //   size/length row            
+              $rowLength = count($code);
+              $rowSize = 0;
+              foreach($code AS $k=>$v) {
+                 $rowSize += $code[$k]['size'];
+              };
+                    
+              // errorcode      
+              $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
+              $handlefolder = opendir (getcwd()."/".$dir2);
+              while ($file = readdir ($handlefolder)) {
+                  if (substr($file, -4) == '.bin') {
+                    $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
+                    while ($contents = fread($handle, $rowSize)) {
+                        $tmpObject = array();
+                        for ($i=0; $i<$rowLength; $i++) {  
+                           
+                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));         
+                           $data = $data[1];
+                           
+                           if ($code[$i]['name'] == 'IpAddress') {
+                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);          
+                           } elseif ($code[$i]['name'] == 'UserId') {
+                              $user = '';
+                              for ($ii=0; $ii<strlen($data); $ii++) {
+                                 $userTmp = ord($data[$ii]);
+                                 $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
+                              };
+                              $data = $user;    
+                              
+                           } elseif ($data < 0) {           // AND $code[$i]['type'] == 'unsignedint'
+                              if (!in_array($data, $errorcode))
+                                 $data = substr(bcsub($data*-1, 4294967296), 1);       
+                           };
+                           $tmpObject[$i] = $data;                         
+                        }; 
+                        $datas['VersionId'] = $tmpObject[0];
+                        $datas['SequenceId'] = $tmpObject[1];
+                        $datas['PlcNetworkId'] = $tmpObject[2];
+                        $datas['WebsiteId'] =$tmpObject[4];
+                        $datas['PlacementId'] =$tmpObject[5];
+                        $datas['PageId'] = $tmpObject[6];
+                        $datas['CmgnNetworkId'] =$tmpObject[7];
+                        $datas['CampaignId'] =$tmpObject[9];
+                        $datas['MasterCampaignId'] =$tmpObject[10];
+                        $datas['BannerId'] =$tmpObject[11];
+                        $datas['BannerNumber'] =$tmpObject[12];
+                        $datas['PaymentId'] =$tmpObject[13];
+                        $datas['StateId'] =$tmpObject[14];
+                        $datas['AreaCodeId'] =$tmpObject[15];
+                        $datas['IpAddress'] =$tmpObject[16];
+                        $datas['UserId'] =$tmpObject[17];
+                        $datas['OsId'] =$tmpObject[18];
+                        $datas['BrowserId'] =$tmpObject[20];
+                        $datas['BrowserLanguage'] =$tmpObject[21];
+                        $datas['TLDId'] =$tmpObject[22];
+                        $datas['DateEntered'] =$tmpObject[26];
+                        $datas['Hour'] =$tmpObject[27];
+                        $datas['Minute'] =$tmpObject[28];
+                        $datas['Second'] =$tmpObject[29];
+                        $datas['AdServerIp'] =$tmpObject[30];
+                        $datas['AdServerFarmId'] =$tmpObject[31];
+                        $datas['DMAId'] =$tmpObject[32];
+                        $datas['CountryId'] =$tmpObject[33];
+                        $datas['ZipCodeId'] =$tmpObject[34];
+                        $datas['CityId'] =$tmpObject[35];
+                        $datas['IspId'] =$tmpObject[36];
+                        $datas['CountTypeId'] =$tmpObject[37];
+                        $datas['ConnectionTypeId'] =$tmpObject[38];
+                        $datas['in_bin'] = $file;
+                        $this->File_model->insert_tc($datas);
+                     };
+                //rename bin folder in path uploads/ 
+                @fclose($handle);
+                @chmod(getcwd()."/".$dir2.$file, 0666);
+                @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
+              };
+             $debugTimeEnd = microtime(true); 
+        } 
+    } // end of function
+
 }
 ?>
