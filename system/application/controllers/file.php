@@ -1,19 +1,19 @@
-<?php 
+<?php
 class File extends Controller {
 
     public function File(){
         parent::Controller();
-        
+
         // load library
         $this->load->library(array('table','validation'));
-        
+
         // load helper
         $this->load->helper('url');
-        
+
         // load model
         $this->load->model('File_model','',TRUE);
     }
-    
+
     public function index()
     {
         /*
@@ -24,32 +24,27 @@ class File extends Controller {
         /*
         *Start execute time
         */
-        $time_start = microtime(true);
+        //$time_start = microtime(true);
 
         /*
         *As long as admin login, connect app to server file, download files, convert,
         *and parse them into to database.
         */
-        $this->all_connection();
-
+        //$this->all_connection();
+        //$this->
         /*
         *Query for intialize records in database.
         */
-        $data['sum_cf'] = $this->File_model->count_cf();
-        $data['sum_ga'] = $this->File_model->count_ga();
-        $data['sum_gl'] = $this->File_model->count_gl();
-        $data['sum_ir'] = $this->File_model->count_ir();
-        $data['sum_kv'] = $this->File_model->count_kv();
-        $data['sum_kw'] = $this->File_model->count_kw();
-        $data['sum_tc'] = $this->File_model->count_tc();
-       
+        //$cao = $this->_db->match_userID_ipAddress('tbl_cf');
+        $datax = $this->File_model->match_userID_ipAddress('ga');
+        $data['result'] = $datax['result'];
         /*
         *Set recent date & time.
         */
         $data['datum'] = date("Y-m-d H:i:s");
 
         /*
-        *Call all views that will be show as index 
+        *Call all views that will be show as index
         */
         $this->load->view('header',array('data' => $data));
         $this->load->view('file',array('data' => $data));
@@ -57,17 +52,17 @@ class File extends Controller {
         /*
         *End execute time
         */
-        $time_end = microtime(true);
+        //$time_end = microtime(true);
 
         /*
         *Parameter $time has value executed time from parsing and query.
         */
-        $time = $time_end - $time_start;
+        //$time = $time_end - $time_start;
 
         /*
         *Set refresh-time As Session.
         *This Session will be used in header.php
-        */   
+        *//*
         if(!isset($_SESSION['refresh-time']) || $_SESSION['refresh-time'] == ''){
           $_SESSION["refresh-time"] = "30";
         }else{
@@ -78,14 +73,14 @@ class File extends Controller {
             unset($_SESSION["refresh-time"]);
             $_SESSION["refresh-time"] = "600";
           }
-        }
+        }*/
         //echo 'SESSION_'.$_SESSION["refresh-time"]."s";
-        
+
     }
 
     public function set_session($time){
       /*
-      *if executed time longer than 60 seconds/ 1 minutes, 
+      *if executed time longer than 60 seconds/ 1 minutes,
       *the next refresh-time will be 30 seconds,
       *else will be set up as 600 seconds/ 10 minutes.
       */
@@ -101,20 +96,20 @@ class File extends Controller {
       /*
       *Connect to each server file
       */
-      /*$this->connect('cf');
-      $this->connect('gl');
+      //$this->connect('cf');
+      /*$this->connect('gl');
       $this->connect('ir');
       $this->connect('kv');
-      $this->connect('kw');*/
-      $this->connect('tc');
-      //$this->connect('ga');
+      $this->connect('kw');
+      $this->connect('tc');*/
+      $this->connect('ga');
     }
 
     public function get_web_page( $url )
     {
         $user_agent='Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20100101 Firefox/8.0';
         $username = ADS_USER;
-        $password = ADS_PASS;  
+        $password = ADS_PASS;
         $options = array(
 
             CURLOPT_CUSTOMREQUEST  =>"GET",        //set request type post or get
@@ -152,16 +147,16 @@ class File extends Controller {
         $file_name = $file_in;
         // Raising this value may increase performance
         $buffer_size = 4096; // read 4kb at a time
-        $out_file_name = str_replace('.gz', '', $file_name); 
+        $out_file_name = str_replace('.gz', '', $file_name);
         // Open our files (in binary mode)
         $file = gzopen($file_name, 'rb');
-        $out_file = fopen($out_file_name, 'wb'); 
+        $out_file = fopen($out_file_name, 'wb');
         // Keep repeating until the end of the input file
         while(!gzeof($file)) {
           // Read buffer-size bytes
           // Both fwrite and gzread and binary-safe
           fwrite($out_file, gzread($file, $buffer_size));
-        } 
+        }
         // Files are done, close files
         fclose($out_file);
         gzclose($file);
@@ -173,14 +168,14 @@ class File extends Controller {
       $username = ADS_USER;
       $password = ADS_PASS;
       $che = curl_init();
-      curl_setopt($che, CURLOPT_POST, 0); 
-      curl_setopt($che, CURLOPT_URL,$files_url); 
+      curl_setopt($che, CURLOPT_POST, 0);
+      curl_setopt($che, CURLOPT_URL,$files_url);
       curl_setopt($che, CURLOPT_RETURNTRANSFER, 1);
       curl_setopt($che, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
       curl_setopt($che, CURLOPT_USERPWD, "$username:$password");
 
       $content = curl_exec($che);
-                              
+
       $download = fopen($save_to, 'w');
       fwrite($download, $content);
       fclose($download);
@@ -200,13 +195,13 @@ class File extends Controller {
 
           $page = $result['content'];
 
-          if($result==TRUE){  
+          if($result==TRUE){
               //explode
               $str = $page;
               $preg=preg_match_all('#<li><a.*?>(.*?)<\/a></li>#', $str, $parts);
               if($preg==TRUE){
-                  
-                  //get the highest available array key          
+
+                  //get the highest available array key
                   $maxIndex = array_search(max($parts[0]), $parts[0]);
                   //rename value from $maxIndex. Before : "(1 space)value"
                   $subValue = substr($parts[1][$maxIndex], 1);
@@ -226,8 +221,8 @@ class File extends Controller {
                       $str2 = $page2;
                       $preg2=preg_match_all('#<li><a.*?>(.*?)<\/a></li>#', $str2, $parts2);
                       if($preg2==TRUE){
-                          
-                          //get the highest available array key          
+
+                          //get the highest available array key
                           $maxIndex2 = array_search(max($parts2[0]), $parts2[0]);
                           //rename value from $maxIndex. Before : "(1 space)value"
                           $subValue2 = substr($parts2[1][$maxIndex2], 1);
@@ -242,14 +237,14 @@ class File extends Controller {
 
                           $page3 = $result3['content'];
                           if($result3==TRUE){
-                              //create folder 
+                              //create folder
                               $dir = null;
-                              if(!is_dir($dir .= "uploads/".$table."/".$subValue)){ 
+                              if(!is_dir($dir .= "uploads/".$table."/".$subValue)){
                                 mkdir($dir, 0777, true);
                                 chmod($dir, 0777);
                               }
                               $dir2 = null;
-                              if(!is_dir($dir2 .= 'uploads/'.$table.'/'.$subValue.$subValue2)){  
+                              if(!is_dir($dir2 .= 'uploads/'.$table.'/'.$subValue.$subValue2)){
                                   mkdir($dir2, 0777, true);
                                   chmod($dir2, 0777);
                               }
@@ -288,7 +283,7 @@ class File extends Controller {
                                           }
                                       }else{
                                         $filenames = substr($subValue3, 0, -3);
-                                      } 
+                                      }
                                       //overwrite index.txt
                                       $txt = $filenames."\n";
                                       fwrite($myfile, $txt);
@@ -305,12 +300,12 @@ class File extends Controller {
           } // end of 'if($result==TRUE)'
       } // end of function
 
-      public function parse_cf($dir2) 
+      public function parse_cf($dir2)
       {
-          ini_set('max_execution_time', 0); 
+          ini_set('max_execution_time', 0);
           @set_time_limit(0);
 
-          $debugTimeStart = microtime(true); 
+          $debugTimeStart = microtime(true);
 
           $dataTypesSize = array(
                 'tinyint'=> array('code'=>'C', 'size'=>''),
@@ -327,11 +322,11 @@ class File extends Controller {
                 'varchar(924)'=> array('code'=>'a923', 'size'=>''),
                 'varchar(101)'=> array('code'=>'a100', 'size'=>''),
                 'varchar(100)'=> array('code'=>'a99', 'size'=>''),
-                'varchar(297)'=> array('code'=>'a296', 'size'=>'') 
-          ); 
+                'varchar(297)'=> array('code'=>'a296', 'size'=>'')
+          );
           $codeCF = array(
                 array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
-                array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),       
+                array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                 array('name'=>'PlcNetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                 array('name'=>'PlcSubNetworkId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                 array('name'=>'WebsiteId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
@@ -342,7 +337,7 @@ class File extends Controller {
                 array('name'=>'CampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                 array('name'=>'MasterCampaignId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''), // 10
                 array('name'=>'BannerId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
-                array('name'=>'BannerNumber', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),       
+                array('name'=>'BannerNumber', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                 array('name'=>'PaymentId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                 array('name'=>'StateId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                 array('name'=>'CountTypeId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''), //15
@@ -370,27 +365,27 @@ class File extends Controller {
             //    array('name'=>'Referer', 'type'=>'varchar(297)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
             //    array('name'=>'QueryString', 'type'=>'varchar(297)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
             //    array('name'=>'LinkUrl', 'type'=>'varchar(297)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
-            //    array('name'=>'UserAgent', 'type'=>'varchar(297)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),// 40    
-                
+            //    array('name'=>'UserAgent', 'type'=>'varchar(297)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),// 40
+
           );
 
           $code = $codeCF;
           //$code = $codeBPC;
-          
+
           /*
-            sizes of datatypes  
-          */  
+            sizes of datatypes
+          */
           foreach($dataTypesSize AS $k=>$v) {
-            $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));  
-            
+            $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));
+
           };
           $rowPointer = 0;
           foreach($code AS $k=>$v) {
             $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
-            $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];  
+            $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];
             $code[$k]['accumulatedPointer'] = $rowPointer;
-            $rowPointer += $code[$k]['size'];     
-          };      
+            $rowPointer += $code[$k]['size'];
+          };
 
           /*
             size/length row
@@ -400,7 +395,7 @@ class File extends Controller {
           foreach($code AS $k=>$v) {
             $rowSize += $code[$k]['size'];
           };
-          
+
           /*
             errorcode
           */
@@ -413,35 +408,38 @@ class File extends Controller {
               while ($contents = fread($handle, $rowSize)) {
                 $tmpObject = array();
                 for ($i=0; $i<$rowLength; $i++) {
-                               
-                $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));      
+
+                $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));
                 $data = $data[1];
-                                
+
                 if ($code[$i]['name'] == 'IpAddress') {
-                  $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);       
+                  $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);
                 } elseif ($code[$i]['name'] == 'UserId') {
                   $user = '';
                   for ($ii=0; $ii<strlen($data); $ii++) {
                      $userTmp = ord($data[$ii]);
                      $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
                   };
-                  $data = $user;    
-                                  
+                  $data = $user;
+
                  } elseif ($data < 0) {        // AND $code[$i]['type'] == 'unsignedint'
                     if (!in_array($data, $errorcode))
-                      $data = substr(bcsub($data*-1, 4294967296), 1);     
+                      $data = substr(bcsub($data*-1, 4294967296), 1);
                  };
-                 $tmpObject[$i] = $data;    
+                 $tmpObject[$i] = $data;
                  if ($i == 36) {
                         $contents = fread($handle, $tmpObject[36]);
-                        $data = unpack('a'.$tmpObject[36], $contents);            
+                        $data = unpack('a'.$tmpObject[36], $contents);
                         $data = explode("\0", $data[1]);
-                        $tmpObject[37] = $data[0];      
-                        $tmpObject[38] = $data[1];      
-                        $tmpObject[39] = $data[2];      
-                        $tmpObject[40] = $data[3];                   
+                        $tmpObject[37] = $data[0];
+                        $tmpObject[38] = $data[1];
+                        $tmpObject[39] = $data[2];
+                        $tmpObject[40] = $data[3];
                   };
                 }; //end of for ($i=0; $i<$rowLength; $i++) {
+                $IDs = $this->File_model->nextId('tbl_cf');
+                $IDs = $IDs+1;
+                $datas['_id'] =  $IDs;
                 $datas['VersionId'] = $tmpObject[0];
                 $datas['SequenceId'] = $tmpObject[1];
                 $datas['PlcNetworkId'] = $tmpObject[2];
@@ -482,24 +480,25 @@ class File extends Controller {
                 $datas['UserAgent'] =$tmpObject[40];
                 $datas['in_bin'] = $file;
                 //insert to database
-                $this->File_model->insert_cf($datas);
+                //$this->File_model->insert_cf($datas);
+                $this->File_model->insert_mo_cf($datas);
             }; //end of while ($contents = fread($handle, $rowSize))
-             
-             //rename bin folder in path uploads/ 
+
+             //rename bin folder in path uploads/
              @fclose($handle);
              @chmod(getcwd()."/".$dir2.$file, 0666);
              @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
           }; //end of if (substr($file, -4) == '.bin') {
-          $debugTimeEnd = microtime(true); 
+          $debugTimeEnd = microtime(true);
         } //end of while ($file = readdir ($handlefolder))
       }  //end of function
 
-  
+
       public function parse_ga($dir2) {
-        ini_set('max_execution_time', 0); 
+        ini_set('max_execution_time', 0);
         @set_time_limit(0);
 
-        $debugTimeStart = microtime(true); 
+        $debugTimeStart = microtime(true);
 
         $dataTypesSize = array(
                        'tinyint'=> array('code'=>'C', 'size'=>''),
@@ -558,26 +557,26 @@ class File extends Controller {
 
           $code = $codeGA;
 
-                //sizes of datatypes   
+                //sizes of datatypes
           foreach($dataTypesSize AS $k=>$v) {
-                $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));                  
+                $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));
           };
           $rowPointer = 0;
           foreach($code AS $k=>$v) {
                 $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
-                $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];   
+                $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];
                 $code[$k]['accumulatedPointer'] = $rowPointer;
-                $rowPointer += $code[$k]['size'];         
-          };     
+                $rowPointer += $code[$k]['size'];
+          };
 
-          //   size/length row            
+          //   size/length row
           $rowLength = count($code);
           $rowSize = 0;
           foreach($code AS $k=>$v) {
                $rowSize += $code[$k]['size'];
           };
-                      
-          // errorcode      
+
+          // errorcode
           $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
           $handlefolder = opendir (getcwd()."/".$dir2);
           while ($file = readdir ($handlefolder)) {
@@ -586,26 +585,29 @@ class File extends Controller {
               while ($contents = fread($handle, $rowSize)) {
                   $tmpObject = array();
                   for ($i=0; $i<$rowLength; $i++) {
-                             $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));         
+                             $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));
                              $data = $data[1];
-                             
+
                              if ($code[$i]['name'] == 'IpAddress') {
-                                $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);          
+                                $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);
                              } elseif ($code[$i]['name'] == 'UserId') {
                                 $user = '';
                                 for ($ii=0; $ii<strlen($data); $ii++) {
                                    $userTmp = ord($data[$ii]);
                                    $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
                                 };
-                                $data = $user;    
-                                
+                                $data = $user;
+
                              } elseif ($data < 0) {           // AND $code[$i]['type'] == 'unsignedint'
                                 if (!in_array($data, $errorcode))
-                                   $data = substr(bcsub($data*-1, 4294967296), 1);       
+                                   $data = substr(bcsub($data*-1, 4294967296), 1);
                              };
                              $tmpObject[$i] = $data;
 
-                    }; 
+                    };
+                    $IDs = $this->File_model->nextId('tbl_ga');
+                    $IDs = $IDs+1;
+                    $datas['_id'] =  $IDs;
                           $datas['VersionId'] = $tmpObject[0];
                           $datas['SequenceId'] = $tmpObject[1];
                           $datas['PlcNetworkId'] = $tmpObject[2];
@@ -641,22 +643,22 @@ class File extends Controller {
                           $datas['CountTypeId'] =$tmpObject[37];
                           $datas['ConnectionTypeId'] =$tmpObject[38];
                           $datas['in_bin'] = $file;
-                          $this->File_model->insert_ga($datas);
-              };//end of while ($contents = fread($handle, $rowSize)) 
-              //rename bin folder in path uploads/ 
+                          $this->File_model->insert_mo_ga($datas);
+              };//end of while ($contents = fread($handle, $rowSize))
+              //rename bin folder in path uploads/
               @fclose($handle);
               @chmod(getcwd()."/".$dir2.$file, 0666);
               @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
           };
           $debugTimeEnd = microtime(true);
-        } 
+        }
       } // end of function
 
       public function parse_gl($dir2) {
-             ini_set('max_execution_time', 0); 
+             ini_set('max_execution_time', 0);
              @set_time_limit(0);
 
-             $debugTimeStart = microtime(true); 
+             $debugTimeStart = microtime(true);
 
              $dataTypesSize = array(
                      'tinyint'=> array('code'=>'C', 'size'=>''),
@@ -715,27 +717,27 @@ class File extends Controller {
 
             $code = $codeGA;
 
-            //sizes of datatypes   
+            //sizes of datatypes
             foreach($dataTypesSize AS $k=>$v) {
-                 $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], '')); 
-                 
+                 $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));
+
             };
             $rowPointer = 0;
             foreach($code AS $k=>$v) {
                  $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
-                 $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];   
+                 $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];
                  $code[$k]['accumulatedPointer'] = $rowPointer;
-                 $rowPointer += $code[$k]['size'];         
-            };     
+                 $rowPointer += $code[$k]['size'];
+            };
 
-            //   size/length row            
+            //   size/length row
             $rowLength = count($code);
             $rowSize = 0;
             foreach($code AS $k=>$v) {
                  $rowSize += $code[$k]['size'];
             };
-                    
-            // errorcode      
+
+            // errorcode
             $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
             $handlefolder = opendir (getcwd()."/".$dir2);
             while ($file = readdir ($handlefolder)) {
@@ -744,26 +746,26 @@ class File extends Controller {
                   while ($contents = fread($handle, $rowSize)) {
                       $tmpObject = array();
                       for ($i=0; $i<$rowLength; $i++) {
-                           
-                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));         
+
+                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));
                            $data = $data[1];
-                           
+
                            if ($code[$i]['name'] == 'IpAddress') {
-                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);          
+                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);
                            } elseif ($code[$i]['name'] == 'UserId') {
                               $user = '';
                               for ($ii=0; $ii<strlen($data); $ii++) {
                                  $userTmp = ord($data[$ii]);
                                  $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
                               };
-                              $data = $user;    
-                              
+                              $data = $user;
+
                            } elseif ($data < 0) {           // AND $code[$i]['type'] == 'unsignedint'
                               if (!in_array($data, $errorcode))
-                                 $data = substr(bcsub($data*-1, 4294967296), 1);       
+                                 $data = substr(bcsub($data*-1, 4294967296), 1);
                            };
-                           $tmpObject[$i] = $data;                         
-                        }; 
+                           $tmpObject[$i] = $data;
+                        };
                         $datas['VersionId'] = $tmpObject[0];
                         $datas['SequenceId'] = $tmpObject[1];
                         $datas['PlcNetworkId'] = $tmpObject[2];
@@ -806,20 +808,20 @@ class File extends Controller {
                         $datas['in_bin'] = $file;
                         $this->File_model->insert_gl($datas);
                 };
-                //rename bin folder in path uploads/ 
+                //rename bin folder in path uploads/
                 @fclose($handle);
                 @chmod(getcwd()."/".$dir2.$file, 0666);
                 @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
             };
-            $debugTimeEnd = microtime(true);     
+            $debugTimeEnd = microtime(true);
         }
     }// end of function
 
     public function parse_ir($dir2) {
-             ini_set('max_execution_time', 0); 
+             ini_set('max_execution_time', 0);
              @set_time_limit(0);
 
-             $debugTimeStart = microtime(true); 
+             $debugTimeStart = microtime(true);
 
              $dataTypesSize = array(
             'tinyint'=> array('code'=>'C', 'size'=>''),
@@ -835,7 +837,7 @@ class File extends Controller {
             'char(1000)'=> array('code'=>'a1000', 'size'=>''),
             'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
         );
-    
+
         $codeIR = array(
               array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
               array('name'=>'NetworkId', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
@@ -858,20 +860,20 @@ class File extends Controller {
               array('name'=>'Referer', 'type'=>'char(40)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'')
             );
         $code = $codeIR;
-        
+
         /*
-          sizes of datatypes  
-        */  
+          sizes of datatypes
+        */
         foreach($dataTypesSize AS $k=>$v) {
-          $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));  
-          
+          $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));
+
         };
         $rowPointer = 0;
         foreach($code AS $k=>$v) {
           $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
-          $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];  
+          $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];
           $code[$k]['accumulatedPointer'] = $rowPointer;
-          $rowPointer += $code[$k]['size'];     
+          $rowPointer += $code[$k]['size'];
         };
         /*
           size/length row
@@ -892,26 +894,26 @@ class File extends Controller {
                   while ($contents = fread($handle, $rowSize)) {
                       $tmpObject = array();
                       for ($i=0; $i<$rowLength; $i++) {
-                           
-                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));      
+
+                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));
                             $data = $data[1];
-                            
+
                             if ($code[$i]['name'] == 'IpAddress') {
-                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);       
+                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);
                             } elseif ($code[$i]['name'] == 'UserId') {
                               $user = '';
                               for ($ii=0; $ii<strlen($data); $ii++) {
                                 $userTmp = ord($data[$ii]);
                                 $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
                               };
-                              $data = $user;    
-                              
+                              $data = $user;
+
                             } elseif ($data < 0) {        // AND $code[$i]['type'] == 'unsignedint'
                               if (!in_array($data, $errorcode))
-                                $data = substr(bcsub($data*-1, 4294967296), 1);     
+                                $data = substr(bcsub($data*-1, 4294967296), 1);
                             };
-                            $tmpObject[$i] = $data;                       
-                        }; 
+                            $tmpObject[$i] = $data;
+                        };
                         $datas['VersionId'] = $tmpObject[0];
                         $datas['NetworkId'] = $tmpObject[1];
                         $datas['SubNetworkId'] = $tmpObject[2];
@@ -919,7 +921,7 @@ class File extends Controller {
                         $datas['CampaignId'] =$tmpObject[4];
                         $datas['IpAddress'] =$tmpObject[5];
                         $datas['UserId'] =$tmpObject[6];
-                        $datas['OsId'] =$tmpObject[7];                        
+                        $datas['OsId'] =$tmpObject[7];
                         $datas['BrowserId'] =$tmpObject[8];
                         $datas['TagType'] =$tmpObject[9];
                         $datas['RequestType'] =$tmpObject[10];
@@ -934,20 +936,20 @@ class File extends Controller {
                         $datas['in_bin'] = $file;
                         $this->File_model->insert_ir($datas);
                      };
-                //rename bin folder in path uploads/ 
+                //rename bin folder in path uploads/
                 @fclose($handle);
                 @chmod(getcwd()."/".$dir2.$file, 0666);
                 @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
                };
-              $debugTimeEnd = microtime(true); 
-        } 
+              $debugTimeEnd = microtime(true);
+        }
     } // end of function
 
     public function parse_kv($dir2) {
-             ini_set('max_execution_time', 0); 
+             ini_set('max_execution_time', 0);
              @set_time_limit(0);
 
-             $debugTimeStart = microtime(true); 
+             $debugTimeStart = microtime(true);
 
              $dataTypesSize = array(
             'tinyint'=> array('code'=>'C', 'size'=>''),
@@ -963,7 +965,7 @@ class File extends Controller {
             'char(1000)'=> array('code'=>'a1000', 'size'=>''),
             'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
             );
-      
+
             $codeKV2 = array(
                   array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
                   array('name'=>'RecordSize', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
@@ -978,41 +980,41 @@ class File extends Controller {
                   array('name'=>'ExtensionType', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''), //10
                   array('name'=>'PhraseId', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                   array('name'=>'NoKeywordEntries', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''), //12
-                  
+
                 );
-        
+
             $codeKV2V2 = array(
                   array('name'=>'KeyId1', 'type'=>'int', 'size'=>'', 'code'=>''),
                   array('name'=>'ExpressionId1', 'type'=>'int', 'size'=>'', 'code'=>''),
-                  array('name'=>'ValueString1', 'type'=>'char(49)', 'size'=>'', 'code'=>'') 
+                  array('name'=>'ValueString1', 'type'=>'char(49)', 'size'=>'', 'code'=>'')
                 );
-            
+
 
             $code   = $codeKV2;
             $codeV2 = $codeKV2V2;
-            
+
             /*
-              sizes of datatypes  
-            */  
+              sizes of datatypes
+            */
             foreach($dataTypesSize AS $k=>$v) {
-              $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));  
-              
+              $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));
+
             };
-            
+
 
             $rowPointer = 0;
             foreach($code AS $k=>$v) {
               $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
-              $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];  
+              $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];
               $code[$k]['accumulatedPointer'] = $rowPointer;
               $rowPointer += $code[$k]['size'];
             };
-            
+
             foreach($codeV2 AS $k=>$v) {
               $codeV2[$k]['size'] = $dataTypesSize[$codeV2[$k]['type']]['size'];
-              $codeV2[$k]['code'] = $dataTypesSize[$codeV2[$k]['type']]['code'];  
+              $codeV2[$k]['code'] = $dataTypesSize[$codeV2[$k]['type']]['code'];
             };
-            
+
 
             /*
               size/length row
@@ -1020,8 +1022,8 @@ class File extends Controller {
             $rowLength    = count($code);
             $rowLengthV2  = count($codeKV2V2);
             $rowSize = 0;
-            foreach($code AS $k=>$v) {    
-              $rowSize += $code[$k]['size'];  
+            foreach($code AS $k=>$v) {
+              $rowSize += $code[$k]['size'];
             };
 
             $handlefolder = opendir (getcwd()."/".$dir2);
@@ -1030,22 +1032,22 @@ class File extends Controller {
                   $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
                   while ($contents = fread($handle, $rowSize)) {
                       $tmpObject = array();
-                      for ($i=0; $i<$rowLength; $i++) {    
-                          $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));     
+                      for ($i=0; $i<$rowLength; $i++) {
+                          $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));
                           $data = $data[1];
-                          
+
                           if ($code[$i]['name'] == 'IpAddress') {
-                            $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);       
+                            $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);
                           } elseif ($code[$i]['name'] == 'UserId') {
                             $user = '';
                             for ($ii=0; $ii<strlen($data); $ii++) {
                               $userTmp = ord($data[$ii]);
                               $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
                             };
-                            $data = $user;    
-                            
+                            $data = $user;
+
                           } elseif ($data < 0) {        // AND $code[$i]['type'] == 'unsignedint'
-                            $data = substr(bcsub($data*-1, 4294967296), 1);     
+                            $data = substr(bcsub($data*-1, 4294967296), 1);
                           };
                           if ($code[$i]['name'] == 'NoKeywordEntries') {
                             $morekeyvalue = $data;
@@ -1053,28 +1055,28 @@ class File extends Controller {
                           if ($code[$i]['name'] == 'RecordSize') {
                             $recordsize = $data;
                           };
-                          $tmpObject[$i] = $data; 
-                        };      
-                        if ($recordsize > $rowSize) {     
-                          $record = $recordsize-$rowSize;     
+                          $tmpObject[$i] = $data;
+                        };
+                        if ($recordsize > $rowSize) {
+                          $record = $recordsize-$rowSize;
                           $tmpObject[16] = array();
                           $tmpObject[17] = array();
-                          $tmpObject[18] = array();   
+                          $tmpObject[18] = array();
                           $recordPointer = 0;
-                          $contents = fread($handle, $record);        
+                          $contents = fread($handle, $record);
                           for ($i=0; $i<$morekeyvalue; $i++) {
-                            for ($iV2=0; $iV2<$rowLengthV2; $iV2++) {         
+                            for ($iV2=0; $iV2<$rowLengthV2; $iV2++) {
                               $codeCode = $codeV2[$iV2]['code'];
-                              $codeSize = $codeV2[$iV2]['size']; 
-                              if ($iV2 == 2) {                      
+                              $codeSize = $codeV2[$iV2]['size'];
+                              if ($iV2 == 2) {
                                 if ($codeSize>$record-$recordPointer) {
                                   $codeCode = 'a'.($record-$recordPointer);
                                   $codeSize = $record-$recordPointer;
-                                };            
-                              };          
-                              $data = unpack($codeCode, substr($contents, $recordPointer, $codeSize));  
+                                };
+                              };
+                              $data = unpack($codeCode, substr($contents, $recordPointer, $codeSize));
                               $recordPointer += $codeSize;
-                              $data = $data[1];         
+                              $data = $data[1];
                               if ($codeV2[$iV2]['name'] == 'KeyId1') {
                                 array_push($tmpObject[16], $data);
                               } elseif ($codeV2[$iV2]['name'] == 'ExpressionId1') {
@@ -1084,7 +1086,7 @@ class File extends Controller {
                               };
                             };
                           };
-                        };    
+                        };
                         $datas['VersionId'] = $tmpObject[0];
                         $datas['RecordSize'] = $tmpObject[1];
                         $datas['SequenceId'] = $tmpObject[2];
@@ -1097,24 +1099,24 @@ class File extends Controller {
                         $datas['CampaignId'] =$tmpObject[9];
                         $datas['ExtensionType'] =$tmpObject[10];
                         $datas['PhraseId'] =$tmpObject[11];
-                        $datas['NoKeywordEntries'] =$tmpObject[12];                      
+                        $datas['NoKeywordEntries'] =$tmpObject[12];
                         $datas['in_bin'] = $file;
                         $this->File_model->insert_kv($datas);
                      };
-                //rename bin folder in path uploads/ 
+                //rename bin folder in path uploads/
                 @fclose($handle);
                 @chmod(getcwd()."/".$dir2.$file, 0666);
                 @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
             };
-            $debugTimeEnd = microtime(true); 
-        }  
+            $debugTimeEnd = microtime(true);
+        }
     } // end of function
 
     public function parse_kw($dir2) {
-             ini_set('max_execution_time', 0); 
+             ini_set('max_execution_time', 0);
              @set_time_limit(0);
 
-             $debugTimeStart = microtime(true); 
+             $debugTimeStart = microtime(true);
 
              $dataTypesSize = array(
             'tinyint'=> array('code'=>'C', 'size'=>''),
@@ -1130,7 +1132,7 @@ class File extends Controller {
             'char(1000)'=> array('code'=>'a1000', 'size'=>''),
             'varchar(1000)'=> array('code'=>'a999', 'size'=>''),
                   );
-              
+
             $codeKW = array(
                   array('name'=>'VersionId', 'type'=>'tinyint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>'0'),
                   array('name'=>'SequenceId', 'type'=>'unsignedint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
@@ -1157,26 +1159,26 @@ class File extends Controller {
                   array('name'=>'KeywordId10', 'type'=>'int', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                   array('name'=>'KeywordText', 'type'=>'char(40)', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
                   array('name'=>'KeywordTextLength', 'type'=>'smallint', 'size'=>'', 'code'=>'', 'accumulatedPointer'=>''),
-                  
+
                 );
 
             $code = $codeKW;
-            
+
             /*
-              sizes of datatypes  
-            */  
+              sizes of datatypes
+            */
             foreach($dataTypesSize AS $k=>$v) {
-              $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));  
-              
+              $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));
+
             };
             $rowPointer = 0;
             foreach($code AS $k=>$v) {
               $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
-              $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];  
+              $code[$k]['code'] = $dataTypesSize[$code[$k]['type']]['code'];
               $code[$k]['accumulatedPointer'] = $rowPointer;
-              $rowPointer += $code[$k]['size'];     
+              $rowPointer += $code[$k]['size'];
             };
-            
+
 
             /*
               size/length row
@@ -1186,8 +1188,8 @@ class File extends Controller {
             foreach($code AS $k=>$v) {
               $rowSize += $code[$k]['size'];
             };
-            
-            
+
+
             /*
               errorcode
             */
@@ -1199,27 +1201,27 @@ class File extends Controller {
                   $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
                   while ($contents = fread($handle, $rowSize)) {
                       $tmpObject = array();
-                      for ($i=0; $i<$rowLength; $i++) {    
-                          $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));     
+                      for ($i=0; $i<$rowLength; $i++) {
+                          $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));
                           $data = $data[1];
-                          
+
                           if ($code[$i]['name'] == 'IpAddress') {
-                            $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);       
+                            $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);
                           } elseif ($code[$i]['name'] == 'UserId') {
                             $user = '';
                             for ($ii=0; $ii<strlen($data); $ii++) {
                               $userTmp = ord($data[$ii]);
                               $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
                             };
-                            $data = $user;    
-                            
+                            $data = $user;
+
                           } elseif ($data < 0) {        // AND $code[$i]['type'] == 'unsignedint'
                             if (!in_array($data, $errorcode))
-                              $data = substr(bcsub($data*-1, 4294967296), 1);     
+                              $data = substr(bcsub($data*-1, 4294967296), 1);
                           };
-                          $tmpObject[$i] = $data;     
-                          
-                        };  
+                          $tmpObject[$i] = $data;
+
+                        };
                         $datas['VersionId'] = $tmpObject[0];
                         $datas['SequenceId'] = $tmpObject[1];
                         $datas['PlcNetworkId'] = $tmpObject[2];
@@ -1234,24 +1236,24 @@ class File extends Controller {
                         $datas['ExtensionType'] =$tmpObject[11];
                         $datas['TimeStamp'] =$tmpObject[12];
                         $datas['KeywordText'] =$tmpObject[13];
-                        $datas['KeywordTextLength'] =$tmpObject[14];  
-                        $datas['in_bin'] = $file;                    
+                        $datas['KeywordTextLength'] =$tmpObject[14];
+                        $datas['in_bin'] = $file;
                         $this->File_model->insert_kw($datas);
-                     }; 
-                //rename bin folder in path uploads/ 
+                     };
+                //rename bin folder in path uploads/
                 @fclose($handle);
                 @chmod(getcwd()."/".$dir2.$file, 0666);
                 @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
             };
-            $debugTimeEnd = microtime(true); 
-        } 
+            $debugTimeEnd = microtime(true);
+        }
     } // end of function
 
     public function parse_tc($dir2) {
-             ini_set('max_execution_time', 0); 
+             ini_set('max_execution_time', 0);
              @set_time_limit(0);
 
-             $debugTimeStart = microtime(true); 
+             $debugTimeStart = microtime(true);
 
              $dataTypesSize = array(
                      'tinyint'=> array('code'=>'C', 'size'=>''),
@@ -1310,27 +1312,27 @@ class File extends Controller {
 
                $code = $codeGA;
 
-              //sizes of datatypes   
+              //sizes of datatypes
               foreach($dataTypesSize AS $k=>$v) {
-                 $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], '')); 
-                 
+                 $dataTypesSize[$k]['size'] = strlen(pack($dataTypesSize[$k]['code'], ''));
+
               };
               $rowPointer = 0;
               foreach($code AS $k=>$v) {
                  $code[$k]['size'] = $dataTypesSize[$code[$k]['type']]['size'];
-                 $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];   
+                 $code[$k]['code'] =  $dataTypesSize[$code[$k]['type']]['code'];
                  $code[$k]['accumulatedPointer'] = $rowPointer;
-                 $rowPointer += $code[$k]['size'];         
-              };     
+                 $rowPointer += $code[$k]['size'];
+              };
 
-               //   size/length row            
+               //   size/length row
               $rowLength = count($code);
               $rowSize = 0;
               foreach($code AS $k=>$v) {
                  $rowSize += $code[$k]['size'];
               };
-                    
-              // errorcode      
+
+              // errorcode
               $errorcode = array('-2', '-3', '-4', '-6', '-7', '-10', '-23', '-26', '-98');
               $handlefolder = opendir (getcwd()."/".$dir2);
               while ($file = readdir ($handlefolder)) {
@@ -1338,27 +1340,27 @@ class File extends Controller {
                     $handle = fopen(getcwd()."/".$dir2.$file, 'rb');
                     while ($contents = fread($handle, $rowSize)) {
                         $tmpObject = array();
-                        for ($i=0; $i<$rowLength; $i++) {  
-                           
-                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));         
+                        for ($i=0; $i<$rowLength; $i++) {
+
+                           $data = unpack($code[$i]['code'], substr($contents, $code[$i]['accumulatedPointer'], $code[$i]['size']));
                            $data = $data[1];
-                           
+
                            if ($code[$i]['name'] == 'IpAddress') {
-                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);          
+                              $data = (255 & ($data >> 24)).'.'.(255 & ($data >> 16)).'.'.(255 & $data>>8).'.'.(255 & $data);
                            } elseif ($code[$i]['name'] == 'UserId') {
                               $user = '';
                               for ($ii=0; $ii<strlen($data); $ii++) {
                                  $userTmp = ord($data[$ii]);
                                  $user = $user.dechex ((15 & ($userTmp >> 4))).dechex (15 & $userTmp);
                               };
-                              $data = $user;    
-                              
+                              $data = $user;
+
                            } elseif ($data < 0) {           // AND $code[$i]['type'] == 'unsignedint'
                               if (!in_array($data, $errorcode))
-                                 $data = substr(bcsub($data*-1, 4294967296), 1);       
+                                 $data = substr(bcsub($data*-1, 4294967296), 1);
                            };
-                           $tmpObject[$i] = $data;                         
-                        }; 
+                           $tmpObject[$i] = $data;
+                        };
                         $datas['VersionId'] = $tmpObject[0];
                         $datas['SequenceId'] = $tmpObject[1];
                         $datas['PlcNetworkId'] = $tmpObject[2];
@@ -1395,13 +1397,13 @@ class File extends Controller {
                         $datas['in_bin'] = $file;
                         $this->File_model->insert_tc($datas);
                      };
-                //rename bin folder in path uploads/ 
+                //rename bin folder in path uploads/
                 @fclose($handle);
                 @chmod(getcwd()."/".$dir2.$file, 0666);
                 @rename(getcwd()."/".$dir2.$file, getcwd()."/".$dir2.$file.'.done');
               };
-             $debugTimeEnd = microtime(true); 
-        } 
+             $debugTimeEnd = microtime(true);
+        }
     } // end of function
 
 }

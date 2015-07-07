@@ -1,6 +1,6 @@
 <?php
 class File_model extends Model {
-	
+
 	private $tbl_cf= 'cf';
 	private $tbl_ga= 'ga';
 	private $tbl_gl= 'gl';
@@ -8,11 +8,11 @@ class File_model extends Model {
 	private $tbl_kv= 'kv';
 	private $tbl_kw= 'kw';
 	private $tbl_tc= 'tc';
-	
+
 	function __construct(){
 		parent::__construct();
 	}
-	
+
 	function list_all(){
 		$this->db->order_by('id','asc');
 		return $this->db->get($tbl);
@@ -27,7 +27,12 @@ class File_model extends Model {
 	function insert_cf($datas){
 		return $this->db->insert($this->tbl_cf, $datas);
 	}
-
+	function insert_mo_cf($datas){
+		return $this->mongo_db->insert('tbl_cf',$datas);
+	}
+	function nextId($collection){
+    return $this->mongo_db->count($collection);
+  }
 	function count_ga(){
 		return $this->db->select('count(*) as sum_ga',false)
          ->from('ga')
@@ -37,7 +42,16 @@ class File_model extends Model {
 	function insert_ga($datas){
 		return $this->db->insert($this->tbl_ga, $datas);
 	}
-
+	function insert_mo_ga($datas){
+		return $this->mongo_db->insert('tbl_ga',$datas);
+	}
+	public function match_userID_ipAddress($collection){
+        //$col = self::getCollection($collection);
+        return $this->mongo_db->aggregate($collection,([
+                  [ '$group' => ['_id' => ['UserId' => '$UserId','IpAddress' =>'$IpAddress'], 'count' => ['$sum' => 1]  ] ],
+                  [ '$match' => ['count'=>['$gt' => 1000]] ],
+                ]));
+  }
 	function count_gl(){
 		return $this->db->select('count(*) as sum_gl',false)
          ->from('gl')
