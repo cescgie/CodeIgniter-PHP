@@ -1,6 +1,6 @@
   <p><span class="blink">Stand : <?= $data['datum'] ?></span></p>
   <?php
-
+  echo $data['cur_url'];
   //GA Information
   if (!sizeof($data['result'])) {
       echo
@@ -19,8 +19,8 @@
     echo "<tbody>
             <tr>
               <td>".$i."</td>
-              <td>".$data['result'][$i]["_id"]["UserId"]."</td>
-              <td>".$data['result'][$i]["_id"]["IpAddress"]."</td>
+              <td><a href=".site_url('file/selectUser/'.$data['result'][$i]["_id"]["UserId"].'').">".$data['result'][$i]["_id"]["UserId"]."</a></td>
+              <td><a href=".site_url('file/selectIP/'.$data['result'][$i]["_id"]["IpAddress"].'').">".$data['result'][$i]["_id"]["IpAddress"]."</a></td>
               <td>".$data['result'][$i]["count"]."</td>
             </tr>
       </tbody>";
